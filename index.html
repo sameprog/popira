@@ -2,9 +2,9 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・修正版</title>
+    <title>オンラインポピラ・完全修正版</title>
     <style>
-        body { text-align: center; background: #111; color: #fff; font-family: sans-serif; }
+        body { text-align: center; background: #111; color: #fff; font-family: sans-serif; position: relative; }
         canvas { background: #222; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
         #lives {
             position: absolute;
@@ -12,6 +12,9 @@
             right: 20px;
             font-size: 28px;
             color: #ff69b4;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 8px;
         }
         #startBtn {
             margin-top: 10px;
@@ -22,7 +25,7 @@
     </style>
 </head>
 <body>
-    <h1>オンラインポピラ・修正版</h1>
+    <h1>オンラインポピラ・完全修正版</h1>
     <button id="startBtn">ゲームスタート</button>
     <div id="lives">🎵🎵🎵🎵🎵🎵🎵🎵</div>
     <canvas id="gameCanvas" width="400" height="600"></canvas>
@@ -34,17 +37,16 @@
         const startBtn = document.getElementById('startBtn');
         const livesDisplay = document.getElementById('lives');
 
-        const noteRadius = 20; // ボールの半径
-        const lanes = [50, 150, 250, 350]; // レーン位置
-        let notes = []; // ボールリスト
+        const noteRadius = 20;
+        const lanes = [50, 150, 250, 350];
+        let notes = [];
         let startTime = null;
         let running = false;
-        let lives = 8; // ライフを8に設定
-        const gravity = 0.5; // 加速度を現実的な値に調整
+        let lives = 8;
+        const gravity = 0.1; // 適度な加速度
 
-        // 音源は自分のリポジトリにアップしたファイルに差し替えてね！
         const sound = new Howl({
-            src: ['your-audio-file.mp3'] // ←ここを書き換える
+            src: ['your-audio-file.mp3'] // ← 自分の音源に差し替えて！
         });
 
         const chart = [
@@ -59,7 +61,7 @@
         ];
 
         function startGame() {
-            notes = chart.map(note => ({ ...note, y: 0, velocity: 0, hit: false, missed: false }));
+            notes = chart.map(note => ({ ...note, y: -noteRadius, velocity: 0, hit: false, missed: false }));
             startTime = performance.now();
             running = true;
             lives = 8;
@@ -85,18 +87,20 @@
 
             notes.forEach(note => {
                 if (elapsed >= note.time && !note.hit && !note.missed) {
-                    note.velocity += gravity; // 単純な加速度加算
+                    note.velocity += gravity;
                     note.y += note.velocity;
                 }
 
-                if (!note.hit && !note.missed && note.y > 0 && note.y < canvas.height) {
+                // ボールを描画
+                if (!note.hit && !note.missed && note.y > -noteRadius && note.y < canvas.height + noteRadius) {
                     ctx.beginPath();
                     ctx.arc(lanes[note.lane], note.y, noteRadius, 0, Math.PI * 2);
                     ctx.fillStyle = 'cyan';
                     ctx.fill();
                 }
 
-                if (note.y > canvas.height && !note.missed && !note.hit) {
+                // ボールが下まで落ちたらライフ減少
+                if (note.y >= canvas.height - 30 && !note.missed && !note.hit) {
                     note.missed = true;
                     lives--;
                     updateLives();
@@ -134,3 +138,6 @@
         });
 
         startBtn.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
