@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・超高速台戻り版</title>
+    <title>オンラインポピラ・ボール消滅修正版</title>
     <style>
         body { text-align: center; background: #111; color: #fff; font-family: sans-serif; position: relative; }
         #container {
@@ -35,7 +35,7 @@
     </style>
 </head>
 <body>
-    <h1>オンラインポピラ・超高速台戻り版</h1>
+    <h1>オンラインポピラ・ボール消滅修正版</h1>
     <button id="startBtn">ゲームスタート</button>
     <div id="container">
         <canvas id="gameCanvas" width="400" height="600"></canvas>
@@ -61,7 +61,7 @@
         const paddles = [0, 0, 0, 0];
 
         const sound = new Howl({
-            src: ['your-audio-file.mp3'] // 自分の音源に差し替え
+            src: ['your-audio-file.mp3']
         });
 
         const chart = [
@@ -76,7 +76,7 @@
         ];
 
         function startGame() {
-            notes = chart.map(note => ({ ...note, y: -noteRadius, velocity: 0, hit: false, missed: false }));
+            notes = chart.map(note => ({ ...note, y: -noteRadius, velocity: 0, hit: false, missed: false, done: false }));
             startTime = performance.now();
             lastFrame = startTime;
             running = true;
@@ -104,7 +104,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             paddles.forEach((rise, i) => {
-                if (paddles[i] > 0) paddles[i] -= 8 * deltaTime; // 超高速で戻す
+                if (paddles[i] > 0) paddles[i] -= 8 * deltaTime;
                 if (paddles[i] < 0) paddles[i] = 0;
             });
 
@@ -115,12 +115,24 @@
             });
 
             notes.forEach(note => {
-                if (elapsed >= note.time && !note.missed) {
-                    note.velocity += gravity * deltaTime;
-                    note.y += note.velocity * deltaTime;
+                if (note.done) return; // 終了フラグが立っているノーツはスキップ
+
+                note.velocity += gravity * deltaTime;
+                note.y += note.velocity * deltaTime;
+
+                // HIT後に上に飛ばし、画面外に行ったら消す
+                if (note.hit && note.y + noteRadius < 0) {
+                    note.done = true;
+                    return;
                 }
 
-                if (!note.hit && note.y > -noteRadius && note.y < canvas.height + noteRadius) {
+                // MISS後に下に落ち、画面外に行ったら消す
+                if (note.missed && note.y - noteRadius > canvas.height) {
+                    note.done = true;
+                    return;
+                }
+
+                if (!note.done) {
                     ctx.beginPath();
                     ctx.arc(lanes[note.lane], note.y, noteRadius, 0, Math.PI * 2);
                     ctx.fillStyle = 'yellow';
@@ -149,7 +161,7 @@
             paddles[laneKey] = 60;
 
             const hitIndex = notes.findIndex(note =>
-                note.lane === laneKey && Math.abs(performance.now() - startTime - note.time) < 300 && !note.hit
+                note.lane === laneKey && Math.abs(performance.now() - startTime - note.time) < 300 && !note.hit && !note.missed
             );
 
             if (hitIndex !== -1) {
