@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・完全修正版</title>
+    <title>オンラインポピラ・完全動作版</title>
     <style>
         body { text-align: center; background: #111; color: #fff; font-family: sans-serif; position: relative; }
         canvas { background: #222; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
@@ -25,7 +25,7 @@
     </style>
 </head>
 <body>
-    <h1>オンラインポピラ・完全修正版</h1>
+    <h1>オンラインポピラ・完全動作版</h1>
     <button id="startBtn">ゲームスタート</button>
     <div id="lives">🎵🎵🎵🎵🎵🎵🎵🎵</div>
     <canvas id="gameCanvas" width="400" height="600"></canvas>
@@ -40,32 +40,32 @@
         const noteRadius = 20;
         const lanes = [50, 150, 250, 350];
         let notes = [];
-        let startTime = null;
         let running = false;
         let lives = 8;
-        const gravity = 0.1; // 適度な加速度
+        const gravity = 0.5; // 1フレームあたりの加速度（調整済み）
+        let lastFrameTime = null;
 
         const sound = new Howl({
             src: ['your-audio-file.mp3'] // ← 自分の音源に差し替えて！
         });
 
         const chart = [
-            { time: 1000, lane: 0 },
-            { time: 1500, lane: 1 },
-            { time: 2000, lane: 2 },
-            { time: 2500, lane: 3 },
-            { time: 3000, lane: 0 },
-            { time: 3500, lane: 1 },
-            { time: 4000, lane: 2 },
-            { time: 4500, lane: 3 }
+            { time: 0, lane: 0 },
+            { time: 500, lane: 1 },
+            { time: 1000, lane: 2 },
+            { time: 1500, lane: 3 },
+            { time: 2000, lane: 0 },
+            { time: 2500, lane: 1 },
+            { time: 3000, lane: 2 },
+            { time: 3500, lane: 3 }
         ];
 
         function startGame() {
             notes = chart.map(note => ({ ...note, y: -noteRadius, velocity: 0, hit: false, missed: false }));
-            startTime = performance.now();
-            running = true;
             lives = 8;
             updateLives();
+            running = true;
+            lastFrameTime = performance.now();
             sound.play();
             requestAnimationFrame(gameLoop);
         }
@@ -76,7 +76,9 @@
 
         function gameLoop(now) {
             if (!running) return;
-            const elapsed = now - startTime;
+            const deltaTime = (now - lastFrameTime) / 16.67; // おおよそ60FPS基準
+            lastFrameTime = now;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // 台を描画
@@ -86,12 +88,11 @@
             });
 
             notes.forEach(note => {
-                if (elapsed >= note.time && !note.hit && !note.missed) {
-                    note.velocity += gravity;
-                    note.y += note.velocity;
+                if (!note.hit && !note.missed) {
+                    note.velocity += gravity * deltaTime;
+                    note.y += note.velocity * deltaTime;
                 }
 
-                // ボールを描画
                 if (!note.hit && !note.missed && note.y > -noteRadius && note.y < canvas.height + noteRadius) {
                     ctx.beginPath();
                     ctx.arc(lanes[note.lane], note.y, noteRadius, 0, Math.PI * 2);
@@ -99,7 +100,6 @@
                     ctx.fill();
                 }
 
-                // ボールが下まで落ちたらライフ減少
                 if (note.y >= canvas.height - 30 && !note.missed && !note.hit) {
                     note.missed = true;
                     lives--;
@@ -120,7 +120,7 @@
             if (laneKey === undefined) return;
 
             const hitIndex = notes.findIndex(note =>
-                note.lane === laneKey && Math.abs(performance.now() - startTime - note.time) < 300 && !note.hit
+                note.lane === laneKey && Math.abs(note.y - (canvas.height - 30)) < 30 && !note.hit
             );
 
             if (hitIndex !== -1) {
