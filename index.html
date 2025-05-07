@@ -2,17 +2,22 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・修正版（色修正）</title>
+    <title>オンラインポピラ・右側ライフゲージ版</title>
     <style>
         body { text-align: center; background: #111; color: #fff; font-family: sans-serif; position: relative; }
-        canvas { background: #222; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
+        #container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+        canvas {
+            background: #222;
+        }
         #lives {
-            position: absolute;
-            top: 20px;
-            right: 10px;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            margin-left: 10px;
         }
         .life {
             width: 30px;
@@ -30,10 +35,12 @@
     </style>
 </head>
 <body>
-    <h1>オンラインポピラ・修正版</h1>
+    <h1>オンラインポピラ・右側ライフゲージ版</h1>
     <button id="startBtn">ゲームスタート</button>
-    <div id="lives"></div>
-    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div id="container">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div id="lives"></div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
     <script>
@@ -84,7 +91,7 @@
             for (let i = 0; i < lives; i++) {
                 const lifeEl = document.createElement('div');
                 lifeEl.className = 'life';
-                lifeEl.textContent = '🎵'; // オレンジ色の音符
+                lifeEl.textContent = '🎵';
                 livesDisplay.appendChild(lifeEl);
             }
         }
@@ -116,7 +123,7 @@
                 if (!note.hit && !note.missed && note.y > -noteRadius && note.y < canvas.height + noteRadius) {
                     ctx.beginPath();
                     ctx.arc(lanes[note.lane], note.y, noteRadius, 0, Math.PI * 2);
-                    ctx.fillStyle = 'yellow'; // ボールは鮮やかな黄色に変更
+                    ctx.fillStyle = 'yellow';
                     ctx.fill();
                 }
 
