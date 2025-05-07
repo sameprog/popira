@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・改善版</title>
+    <title>オンラインポピラ・修正版</title>
     <style>
         body { text-align: center; background: #111; color: #fff; font-family: sans-serif; }
         canvas { background: #222; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
@@ -22,9 +22,9 @@
     </style>
 </head>
 <body>
-    <h1>オンラインポピラ・改善版</h1>
+    <h1>オンラインポピラ・修正版</h1>
     <button id="startBtn">ゲームスタート</button>
-    <div id="lives">🎵🎵🎵</div>
+    <div id="lives">🎵🎵🎵🎵🎵🎵🎵🎵</div>
     <canvas id="gameCanvas" width="400" height="600"></canvas>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
@@ -39,8 +39,8 @@
         let notes = []; // ボールリスト
         let startTime = null;
         let running = false;
-        let lives = 3;
-        const gravity = 0.001; // 加速度
+        let lives = 8; // ライフを8に設定
+        const gravity = 0.5; // 加速度を現実的な値に調整
 
         // 音源は自分のリポジトリにアップしたファイルに差し替えてね！
         const sound = new Howl({
@@ -62,7 +62,7 @@
             notes = chart.map(note => ({ ...note, y: 0, velocity: 0, hit: false, missed: false }));
             startTime = performance.now();
             running = true;
-            lives = 3;
+            lives = 8;
             updateLives();
             sound.play();
             requestAnimationFrame(gameLoop);
@@ -77,7 +77,7 @@
             const elapsed = now - startTime;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 台を描画（各レーン下部にピンクの台）
+            // 台を描画
             ctx.fillStyle = '#ff69b4';
             lanes.forEach(x => {
                 ctx.fillRect(x - 30, canvas.height - 30, 60, 10);
@@ -85,8 +85,8 @@
 
             notes.forEach(note => {
                 if (elapsed >= note.time && !note.hit && !note.missed) {
-                    note.velocity += gravity * (now - startTime);
-                    note.y += note.velocity * (now - startTime);
+                    note.velocity += gravity; // 単純な加速度加算
+                    note.y += note.velocity;
                 }
 
                 if (!note.hit && !note.missed && note.y > 0 && note.y < canvas.height) {
@@ -134,6 +134,3 @@
         });
 
         startBtn.addEventListener('click', startGame);
-    </script>
-</body>
-</html>
