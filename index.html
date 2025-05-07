@@ -2,11 +2,11 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・右側ライフゲージ版</title>
+    <title>オンラインポピラ・画面右ライフゲージ&ヒットモーション版</title>
     <style>
         body { text-align: center; background: #111; color: #fff; font-family: sans-serif; position: relative; }
         #container {
-            display: flex;
+            display: inline-flex;
             justify-content: center;
             align-items: flex-start;
             margin-top: 20px;
@@ -17,7 +17,7 @@
         #lives {
             display: flex;
             flex-direction: column;
-            margin-left: 10px;
+            margin-left: 5px;
         }
         .life {
             width: 30px;
@@ -35,7 +35,7 @@
     </style>
 </head>
 <body>
-    <h1>オンラインポピラ・右側ライフゲージ版</h1>
+    <h1>オンラインポピラ・ヒットモーション版</h1>
     <button id="startBtn">ゲームスタート</button>
     <div id="container">
         <canvas id="gameCanvas" width="400" height="600"></canvas>
@@ -104,7 +104,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             paddles.forEach((rise, i) => {
-                if (paddles[i] > 0) paddles[i] -= 0.5 * deltaTime;
+                if (paddles[i] > 0) paddles[i] -= 1.5 * deltaTime; // 戻りを早く
                 if (paddles[i] < 0) paddles[i] = 0;
             });
 
@@ -115,12 +115,12 @@
             });
 
             notes.forEach(note => {
-                if (elapsed >= note.time && !note.hit && !note.missed) {
+                if (elapsed >= note.time && !note.missed) {
                     note.velocity += gravity * deltaTime;
                     note.y += note.velocity * deltaTime;
                 }
 
-                if (!note.hit && !note.missed && note.y > -noteRadius && note.y < canvas.height + noteRadius) {
+                if (!note.hit && note.y > -noteRadius && note.y < canvas.height + noteRadius) {
                     ctx.beginPath();
                     ctx.arc(lanes[note.lane], note.y, noteRadius, 0, Math.PI * 2);
                     ctx.fillStyle = 'yellow';
@@ -146,7 +146,7 @@
             const laneKey = { 'q': 0, 'w': 1, 'e': 2, 'r': 3 }[e.key];
             if (laneKey === undefined) return;
 
-            paddles[laneKey] = 40;
+            paddles[laneKey] = 60; // 台の上昇をさらに大きく
 
             const hitIndex = notes.findIndex(note =>
                 note.lane === laneKey && Math.abs(performance.now() - startTime - note.time) < 300 && !note.hit
@@ -154,6 +154,7 @@
 
             if (hitIndex !== -1) {
                 notes[hitIndex].hit = true;
+                notes[hitIndex].velocity = -10; // ボールをばこーんと上向きに弾き返す
                 console.log('HIT!');
             } else {
                 console.log('MISS INPUT (no life penalty)');
