@@ -2,14 +2,27 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・強化版</title>
+    <title>オンラインポピラ・改善版</title>
     <style>
         body { text-align: center; background: #111; color: #fff; font-family: sans-serif; }
-        canvas { background: #333; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
+        canvas { background: #222; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
+        #lives {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 28px;
+            color: #ff69b4;
+        }
+        #startBtn {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <h1>オンラインポピラ・強化版</h1>
+    <h1>オンラインポピラ・改善版</h1>
     <button id="startBtn">ゲームスタート</button>
     <div id="lives">🎵🎵🎵</div>
     <canvas id="gameCanvas" width="400" height="600"></canvas>
@@ -22,19 +35,18 @@
         const livesDisplay = document.getElementById('lives');
 
         const noteRadius = 20; // ボールの半径
-        const lanes = [50, 150, 250, 350]; // 4つのレーンのX座標
-        let notes = []; // ゲーム中のボールデータ配列
-        let startTime = null; // ゲーム開始時の時間
-        let running = false; // ゲーム実行中かどうか
-        let lives = 3; // ライフ（🎵マーク3つ）
+        const lanes = [50, 150, 250, 350]; // レーン位置
+        let notes = []; // ボールリスト
+        let startTime = null;
+        let running = false;
+        let lives = 3;
+        const gravity = 0.001; // 加速度
 
-        const gravity = 0.001; // ボールの落下加速度 (px/ms²)
-
+        // 音源は自分のリポジトリにアップしたファイルに差し替えてね！
         const sound = new Howl({
-            src: ['https://cdn.pixabay.com/audio/2022/03/10/audio_6d54a8b7cf.mp3'] // BGM
+            src: ['your-audio-file.mp3'] // ←ここを書き換える
         });
 
-        // 譜面データ（どのタイミングでどのレーンにボールを出すか）
         const chart = [
             { time: 1000, lane: 0 },
             { time: 1500, lane: 1 },
@@ -47,49 +59,44 @@
         ];
 
         function startGame() {
-            // 譜面データを初期化し、ボールごとに座標・速度を設定
-            notes = chart.map(note => ({ ...note, y: 0, velocity: 0 }));
+            notes = chart.map(note => ({ ...note, y: 0, velocity: 0, hit: false, missed: false }));
             startTime = performance.now();
             running = true;
             lives = 3;
             updateLives();
-            sound.play(); // BGM再生
+            sound.play();
             requestAnimationFrame(gameLoop);
         }
 
         function updateLives() {
-            // ライフ表示を更新
             livesDisplay.textContent = '🎵'.repeat(lives);
         }
 
         function gameLoop(now) {
             if (!running) return;
-            const elapsed = now - startTime; // ゲーム開始からの経過時間
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // 画面クリア
+            const elapsed = now - startTime;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 打ち返す台を描画
-            ctx.fillStyle = 'yellow';
+            // 台を描画（各レーン下部にピンクの台）
+            ctx.fillStyle = '#ff69b4';
             lanes.forEach(x => {
-                ctx.fillRect(x - 30, canvas.height - 20, 60, 10); // 各レーンの台
+                ctx.fillRect(x - 30, canvas.height - 30, 60, 10);
             });
 
             notes.forEach(note => {
-                if (elapsed >= note.time) {
-                    // ボールに重力を加算
+                if (elapsed >= note.time && !note.hit && !note.missed) {
                     note.velocity += gravity * (now - startTime);
                     note.y += note.velocity * (now - startTime);
                 }
 
-                // ボールを描画
-                if (note.y > 0 && note.y < canvas.height) {
+                if (!note.hit && !note.missed && note.y > 0 && note.y < canvas.height) {
                     ctx.beginPath();
                     ctx.arc(lanes[note.lane], note.y, noteRadius, 0, Math.PI * 2);
                     ctx.fillStyle = 'cyan';
                     ctx.fill();
                 }
 
-                // ボールが画面外に出たらライフ減少
-                if (note.y > canvas.height && !note.missed) {
+                if (note.y > canvas.height && !note.missed && !note.hit) {
                     note.missed = true;
                     lives--;
                     updateLives();
@@ -100,26 +107,25 @@
                 }
             });
 
-            requestAnimationFrame(gameLoop); // 次のフレームへ
+            requestAnimationFrame(gameLoop);
         }
 
-        // キー入力で打ち返し判定（QWER）
         window.addEventListener('keydown', (e) => {
             if (!running) return;
             const laneKey = { 'q': 0, 'w': 1, 'e': 2, 'r': 3 }[e.key];
-            if (laneKey === undefined) return; // 対応キー以外は無視
+            if (laneKey === undefined) return;
 
             const hitIndex = notes.findIndex(note =>
                 note.lane === laneKey && Math.abs(performance.now() - startTime - note.time) < 300 && !note.hit
             );
 
             if (hitIndex !== -1) {
+                notes[hitIndex].hit = true;
                 console.log('HIT!');
-                notes[hitIndex].hit = true; // 成功フラグ
             } else {
-                console.log('MISS!');
                 lives--;
                 updateLives();
+                console.log('MISS!');
                 if (lives <= 0) {
                     running = false;
                     alert('ゲームオーバー！');
@@ -127,7 +133,7 @@
             }
         });
 
-        startBtn.addEventListener('click', startGame); // スタートボタンで開始
+        startBtn.addEventListener('click', startGame);
     </script>
 </body>
 </html>
