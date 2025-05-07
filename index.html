@@ -2,19 +2,24 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・修正版（アニメ強化・エラー修正）</title>
+    <title>オンラインポピラ・修正版（色修正）</title>
     <style>
         body { text-align: center; background: #111; color: #fff; font-family: sans-serif; position: relative; }
         canvas { background: #222; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
         #lives {
             position: absolute;
             top: 20px;
-            right: 20px;
-            font-size: 28px;
-            color: #ff69b4;
-            background: rgba(0,0,0,0.5);
-            padding: 5px 10px;
-            border-radius: 8px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .life {
+            width: 30px;
+            height: 30px;
+            margin: 5px 0;
+            font-size: 24px;
+            color: orange;
         }
         #startBtn {
             margin-top: 10px;
@@ -27,7 +32,7 @@
 <body>
     <h1>オンラインポピラ・修正版</h1>
     <button id="startBtn">ゲームスタート</button>
-    <div id="lives">🎵🎵🎵🎵🎵🎵🎵🎵</div>
+    <div id="lives"></div>
     <canvas id="gameCanvas" width="400" height="600"></canvas>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
@@ -46,7 +51,7 @@
         const gravity = 0.4;
         let lastFrame = null;
 
-        const paddles = [0, 0, 0, 0]; // 台の現在の上昇量
+        const paddles = [0, 0, 0, 0];
 
         const sound = new Howl({
             src: ['your-audio-file.mp3'] // 自分の音源に差し替え
@@ -75,30 +80,33 @@
         }
 
         function updateLives() {
-            livesDisplay.textContent = '🎵'.repeat(Math.max(0, lives));
+            livesDisplay.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                const lifeEl = document.createElement('div');
+                lifeEl.className = 'life';
+                lifeEl.textContent = '🎵'; // オレンジ色の音符
+                livesDisplay.appendChild(lifeEl);
+            }
         }
 
         function gameLoop(now) {
             if (!running) return;
-            const deltaTime = (now - lastFrame) / 16; // 約60fps基準
+            const deltaTime = (now - lastFrame) / 16;
             lastFrame = now;
             const elapsed = now - startTime;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 台のアニメーション（徐々に戻る）
             paddles.forEach((rise, i) => {
                 if (paddles[i] > 0) paddles[i] -= 0.5 * deltaTime;
                 if (paddles[i] < 0) paddles[i] = 0;
             });
 
-            // 台を描画
             ctx.fillStyle = '#ff69b4';
             paddles.forEach((rise, i) => {
                 const height = canvas.height - 30 - rise;
                 ctx.fillRect(lanes[i] - 30, height, 60, 10);
             });
 
-            // ノーツ更新と描画
             notes.forEach(note => {
                 if (elapsed >= note.time && !note.hit && !note.missed) {
                     note.velocity += gravity * deltaTime;
@@ -108,7 +116,7 @@
                 if (!note.hit && !note.missed && note.y > -noteRadius && note.y < canvas.height + noteRadius) {
                     ctx.beginPath();
                     ctx.arc(lanes[note.lane], note.y, noteRadius, 0, Math.PI * 2);
-                    ctx.fillStyle = 'cyan';
+                    ctx.fillStyle = 'yellow'; // ボールは鮮やかな黄色に変更
                     ctx.fill();
                 }
 
@@ -131,7 +139,7 @@
             const laneKey = { 'q': 0, 'w': 1, 'e': 2, 'r': 3 }[e.key];
             if (laneKey === undefined) return;
 
-            paddles[laneKey] = 20; // 台をぐっと上げる
+            paddles[laneKey] = 40;
 
             const hitIndex = notes.findIndex(note =>
                 note.lane === laneKey && Math.abs(performance.now() - startTime - note.time) < 300 && !note.hit
