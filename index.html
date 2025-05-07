@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・画面右ライフゲージ&ヒットモーション版</title>
+    <title>オンラインポピラ・超高速台戻り版</title>
     <style>
         body { text-align: center; background: #111; color: #fff; font-family: sans-serif; position: relative; }
         #container {
@@ -35,7 +35,7 @@
     </style>
 </head>
 <body>
-    <h1>オンラインポピラ・ヒットモーション版</h1>
+    <h1>オンラインポピラ・超高速台戻り版</h1>
     <button id="startBtn">ゲームスタート</button>
     <div id="container">
         <canvas id="gameCanvas" width="400" height="600"></canvas>
@@ -91,7 +91,7 @@
             for (let i = 0; i < lives; i++) {
                 const lifeEl = document.createElement('div');
                 lifeEl.className = 'life';
-                lifeEl.textContent = '🎵';
+                lifeEl.textContent = '⭐';
                 livesDisplay.appendChild(lifeEl);
             }
         }
@@ -104,7 +104,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             paddles.forEach((rise, i) => {
-                if (paddles[i] > 0) paddles[i] -= 1.5 * deltaTime; // 戻りを早く
+                if (paddles[i] > 0) paddles[i] -= 8 * deltaTime; // 超高速で戻す
                 if (paddles[i] < 0) paddles[i] = 0;
             });
 
@@ -146,7 +146,7 @@
             const laneKey = { 'q': 0, 'w': 1, 'e': 2, 'r': 3 }[e.key];
             if (laneKey === undefined) return;
 
-            paddles[laneKey] = 60; // 台の上昇をさらに大きく
+            paddles[laneKey] = 60;
 
             const hitIndex = notes.findIndex(note =>
                 note.lane === laneKey && Math.abs(performance.now() - startTime - note.time) < 300 && !note.hit
@@ -154,7 +154,7 @@
 
             if (hitIndex !== -1) {
                 notes[hitIndex].hit = true;
-                notes[hitIndex].velocity = -10; // ボールをばこーんと上向きに弾き返す
+                notes[hitIndex].velocity = -10;
                 console.log('HIT!');
             } else {
                 console.log('MISS INPUT (no life penalty)');
