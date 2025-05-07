@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・完全改善版</title>
+    <title>オンラインポピラ・修正版（アニメ強化・エラー修正）</title>
     <style>
         body { text-align: center; background: #111; color: #fff; font-family: sans-serif; position: relative; }
         canvas { background: #222; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
@@ -25,7 +25,7 @@
     </style>
 </head>
 <body>
-    <h1>オンラインポピラ・完全改善版</h1>
+    <h1>オンラインポピラ・修正版</h1>
     <button id="startBtn">ゲームスタート</button>
     <div id="lives">🎵🎵🎵🎵🎵🎵🎵🎵</div>
     <canvas id="gameCanvas" width="400" height="600"></canvas>
@@ -46,8 +46,7 @@
         const gravity = 0.4;
         let lastFrame = null;
 
-        // 台のアニメーション状態
-        const paddles = [0, 0, 0, 0]; // 各レーンの上昇量
+        const paddles = [0, 0, 0, 0]; // 台の現在の上昇量
 
         const sound = new Howl({
             src: ['your-audio-file.mp3'] // 自分の音源に差し替え
@@ -76,31 +75,36 @@
         }
 
         function updateLives() {
-            livesDisplay.textContent = '🎵'.repeat(lives);
+            livesDisplay.textContent = '🎵'.repeat(Math.max(0, lives));
         }
 
         function gameLoop(now) {
             if (!running) return;
-            const deltaTime = (now - lastFrame) / 16; // 基準化（約60fps）
+            const deltaTime = (now - lastFrame) / 16; // 約60fps基準
             lastFrame = now;
             const elapsed = now - startTime;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 台を描画（アニメーション）
+            // 台のアニメーション（徐々に戻る）
+            paddles.forEach((rise, i) => {
+                if (paddles[i] > 0) paddles[i] -= 0.5 * deltaTime;
+                if (paddles[i] < 0) paddles[i] = 0;
+            });
+
+            // 台を描画
             ctx.fillStyle = '#ff69b4';
             paddles.forEach((rise, i) => {
-                if (rise > 0) paddles[i] -= 1 * deltaTime; // 戻る動き
                 const height = canvas.height - 30 - rise;
                 ctx.fillRect(lanes[i] - 30, height, 60, 10);
             });
 
+            // ノーツ更新と描画
             notes.forEach(note => {
                 if (elapsed >= note.time && !note.hit && !note.missed) {
                     note.velocity += gravity * deltaTime;
                     note.y += note.velocity * deltaTime;
                 }
 
-                // ボールを描画
                 if (!note.hit && !note.missed && note.y > -noteRadius && note.y < canvas.height + noteRadius) {
                     ctx.beginPath();
                     ctx.arc(lanes[note.lane], note.y, noteRadius, 0, Math.PI * 2);
@@ -108,7 +112,6 @@
                     ctx.fill();
                 }
 
-                // ボールが画面下に到達した場合のみライフ減少
                 if (note.y >= canvas.height - 30 && !note.missed && !note.hit) {
                     note.missed = true;
                     lives--;
@@ -123,13 +126,12 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // キー入力処理
         window.addEventListener('keydown', (e) => {
             if (!running) return;
             const laneKey = { 'q': 0, 'w': 1, 'e': 2, 'r': 3 }[e.key];
             if (laneKey === undefined) return;
 
-            paddles[laneKey] = 10; // 押した台を一時的に上昇させる
+            paddles[laneKey] = 20; // 台をぐっと上げる
 
             const hitIndex = notes.findIndex(note =>
                 note.lane === laneKey && Math.abs(performance.now() - startTime - note.time) < 300 && !note.hit
