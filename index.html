@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・タイマー修正版</title>
+    <title>オンラインポピラ・到達時間補正版</title>
     <style>
         body { text-align: center; background: #111; color: #fff; font-family: sans-serif; position: relative; }
         #container {
@@ -35,7 +35,7 @@
     </style>
 </head>
 <body>
-    <h1>オンラインポピラ・タイマー修正版</h1>
+    <h1>オンラインポピラ・到達時間補正版</h1>
     <button id="startBtn">ゲームスタート</button>
     <div id="container">
         <canvas id="gameCanvas" width="400" height="600"></canvas>
@@ -56,6 +56,7 @@
         let running = false;
         let lives = 8;
         const gravity = 0.4;
+        const initialVelocity = 0;
         let lastFrame = null;
 
         const paddles = [0, 0, 0, 0];
@@ -71,11 +72,37 @@
             { time: 4000, lane: 3 },
             { time: 5000, lane: 0 },
             { time: 6000, lane: 1 },
-            { time: 7000, lane: 2 }
+            { time: 7000, lane: 2 },
+            { time: 8000, lane: 3 }
         ];
 
+        function calculateFallTime() {
+            const distance = canvas.height - 30; // 台までの距離（ピクセル）
+            let fallTime = 0;
+            let velocity = initialVelocity;
+            let y = 0;
+            while (y < distance) {
+                velocity += gravity;
+                y += velocity;
+                fallTime++;
+            }
+            return fallTime * (1000 / 60); // フレーム数 → ミリ秒換算（約60fps基準）
+        }
+
         function startGame() {
-            notes = chart.map(note => ({ ...note, y: -noteRadius, velocity: 0, hit: false, missed: false, done: false }));
+            const fallTimeMs = calculateFallTime();
+            console.log('必要落下時間（ms）:', fallTimeMs);
+
+            notes = chart.map(note => ({
+                ...note,
+                appearTime: note.time - fallTimeMs, // 出現タイミングを前倒し
+                y: -noteRadius,
+                velocity: 0,
+                hit: false,
+                missed: false,
+                done: false
+            }));
+
             startTime = performance.now();
             lastFrame = startTime;
             running = true;
@@ -116,7 +143,7 @@
             notes.forEach(note => {
                 if (note.done) return;
 
-                if (elapsed >= note.time) { // ★ note.time を超えたら動き始める
+                if (elapsed >= note.appearTime) {
                     note.y += note.velocity * deltaTime;
 
                     if (!note.hit) {
@@ -124,32 +151,32 @@
                     } else {
                         note.velocity = -30;
                     }
-                }
 
-                if (note.hit && note.y + noteRadius < 0) {
-                    note.done = true;
-                    return;
-                }
+                    if (!note.done) {
+                        ctx.beginPath();
+                        ctx.arc(lanes[note.lane], note.y, noteRadius, 0, Math.PI * 2);
+                        ctx.fillStyle = 'yellow';
+                        ctx.fill();
+                    }
 
-                if (note.missed && note.y - noteRadius > canvas.height) {
-                    note.done = true;
-                    return;
-                }
+                    if (note.y >= canvas.height - 30 && !note.missed && !note.hit) {
+                        note.missed = true;
+                        lives--;
+                        updateLives();
+                        if (lives <= 0) {
+                            running = false;
+                            alert('ゲームオーバー！');
+                        }
+                    }
 
-                if (elapsed >= note.time && !note.done) { // ★ 描画も時間後に開始
-                    ctx.beginPath();
-                    ctx.arc(lanes[note.lane], note.y, noteRadius, 0, Math.PI * 2);
-                    ctx.fillStyle = 'yellow';
-                    ctx.fill();
-                }
+                    if (note.hit && note.y + noteRadius < 0) {
+                        note.done = true;
+                        return;
+                    }
 
-                if (elapsed >= note.time && note.y >= canvas.height - 30 && !note.missed && !note.hit) {
-                    note.missed = true;
-                    lives--;
-                    updateLives();
-                    if (lives <= 0) {
-                        running = false;
-                        alert('ゲームオーバー！');
+                    if (note.missed && note.y - noteRadius > canvas.height) {
+                        note.done = true;
+                        return;
                     }
                 }
             });
