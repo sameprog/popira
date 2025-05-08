@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・ボール消滅修正版</title>
+    <title>オンラインポピラ・ばこーーん強化版（コメント付き）</title>
     <style>
         body { text-align: center; background: #111; color: #fff; font-family: sans-serif; position: relative; }
         #container {
@@ -35,7 +35,7 @@
     </style>
 </head>
 <body>
-    <h1>オンラインポピラ・ボール消滅修正版</h1>
+    <h1>オンラインポピラ・ばこーーん強化版</h1>
     <button id="startBtn">ゲームスタート</button>
     <div id="container">
         <canvas id="gameCanvas" width="400" height="600"></canvas>
@@ -104,7 +104,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             paddles.forEach((rise, i) => {
-                if (paddles[i] > 0) paddles[i] -= 8 * deltaTime;
+                if (paddles[i] > 0) paddles[i] -= 8 * deltaTime; // ★台の戻りを超高速化
                 if (paddles[i] < 0) paddles[i] = 0;
             });
 
@@ -115,20 +115,23 @@
             });
 
             notes.forEach(note => {
-                if (note.done) return; // 終了フラグが立っているノーツはスキップ
+                if (note.done) return; // ★すでに消滅済みのボールはスキップ
 
-                note.velocity += gravity * deltaTime;
                 note.y += note.velocity * deltaTime;
 
-                // HIT後に上に飛ばし、画面外に行ったら消す
+                if (!note.hit) {
+                    note.velocity += gravity * deltaTime;
+                } else {
+                    note.velocity = -30; // ★HITしたら一気に超高速上昇（ばこーーん！）
+                }
+
                 if (note.hit && note.y + noteRadius < 0) {
-                    note.done = true;
+                    note.done = true; // ★画面上から消えたら削除
                     return;
                 }
 
-                // MISS後に下に落ち、画面外に行ったら消す
                 if (note.missed && note.y - noteRadius > canvas.height) {
-                    note.done = true;
+                    note.done = true; // ★画面下に落ちきったら削除
                     return;
                 }
 
@@ -158,16 +161,15 @@
             const laneKey = { 'q': 0, 'w': 1, 'e': 2, 'r': 3 }[e.key];
             if (laneKey === undefined) return;
 
-            paddles[laneKey] = 60;
+            paddles[laneKey] = 60; // ★台を高く跳ね上げる
 
             const hitIndex = notes.findIndex(note =>
                 note.lane === laneKey && Math.abs(performance.now() - startTime - note.time) < 300 && !note.hit && !note.missed
             );
 
             if (hitIndex !== -1) {
-                notes[hitIndex].hit = true;
-                notes[hitIndex].velocity = -10;
-                console.log('HIT!');
+                notes[hitIndex].hit = true; // ★HITフラグを立てる（次フレームで超上昇）
+                console.log('HIT! ばこーーん！！');
             } else {
                 console.log('MISS INPUT (no life penalty)');
             }
