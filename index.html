@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>オンラインポピラ・ばこーーん強化版（コメント付き）</title>
+    <title>オンラインポピラ・デバッグ修正版</title>
     <style>
         body { text-align: center; background: #111; color: #fff; font-family: sans-serif; position: relative; }
         #container {
@@ -35,7 +35,7 @@
     </style>
 </head>
 <body>
-    <h1>オンラインポピラ・ばこーーん強化版</h1>
+    <h1>オンラインポピラ・デバッグ修正版</h1>
     <button id="startBtn">ゲームスタート</button>
     <div id="container">
         <canvas id="gameCanvas" width="400" height="600"></canvas>
@@ -64,11 +64,16 @@
             src: ['your-audio-file.mp3']
         });
 
+        // デバッグ用に各レーンを分かりやすく配置
         const chart = [
             { time: 1000, lane: 0 },
-            { time: 1500, lane: 1 },
-            { time: 2000, lane: 2 },
-            { time: 2500, lane: 3 }
+            { time: 2000, lane: 1 },
+            { time: 3000, lane: 2 },
+            { time: 4000, lane: 3 },
+            { time: 5000, lane: 0 },
+            { time: 6000, lane: 1 },
+            { time: 7000, lane: 2 },
+            { time: 8000, lane: 3 }
         ];
 
         function startGame() {
@@ -78,6 +83,7 @@
             running = true;
             lives = 8;
             updateLives();
+            console.log('--- ゲーム開始 ---');
             sound.play();
             requestAnimationFrame(gameLoop);
         }
@@ -100,7 +106,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             paddles.forEach((rise, i) => {
-                if (paddles[i] > 0) paddles[i] -= 8 * deltaTime; // ★台の戻りを超高速化
+                if (paddles[i] > 0) paddles[i] -= 8 * deltaTime;
                 if (paddles[i] < 0) paddles[i] = 0;
             });
 
@@ -111,23 +117,23 @@
             });
 
             notes.forEach(note => {
-                if (note.done) return; // ★すでに消滅済みのボールはスキップ
+                if (note.done) return;
 
                 note.y += note.velocity * deltaTime;
 
                 if (!note.hit) {
                     note.velocity += gravity * deltaTime;
                 } else {
-                    note.velocity = -30; // ★HITしたら一気に超高速上昇（ばこーーん！）
+                    note.velocity = -30;
                 }
 
                 if (note.hit && note.y + noteRadius < 0) {
-                    note.done = true; // ★画面上から消えたら削除
+                    note.done = true;
                     return;
                 }
 
                 if (note.missed && note.y - noteRadius > canvas.height) {
-                    note.done = true; // ★画面下に落ちきったら削除
+                    note.done = true;
                     return;
                 }
 
@@ -142,6 +148,7 @@
                     note.missed = true;
                     lives--;
                     updateLives();
+                    console.log(`MISS lane:${note.lane}`);
                     if (lives <= 0) {
                         running = false;
                         alert('ゲームオーバー！');
@@ -154,20 +161,24 @@
 
         window.addEventListener('keydown', (e) => {
             if (!running) return;
-            const laneKey = { 'q': 0, 'w': 1, 'e': 2, 'r': 3 }[e.key];
+            const key = e.key.toLowerCase();
+            const laneKey = { 'q': 0, 'w': 1, 'e': 2, 'r': 3 }[key];
             if (laneKey === undefined) return;
 
-            paddles[laneKey] = 60; // ★台を高く跳ね上げる
+            paddles[laneKey] = 60;
+            console.log(`キー入力: ${key} → lane ${laneKey}`);
 
             const hitIndex = notes.findIndex(note =>
-                note.lane === laneKey && Math.abs(performance.now() - startTime - note.time) < 300 && !note.hit && !note.missed
+                note.lane === laneKey &&
+                Math.abs(performance.now() - startTime - note.time) < 300 &&
+                !note.hit && !note.missed
             );
 
             if (hitIndex !== -1) {
-                notes[hitIndex].hit = true; // ★HITフラグを立てる（次フレームで超上昇）
-                console.log('HIT! ばこーーん！！');
+                notes[hitIndex].hit = true;
+                console.log(`HIT lane:${laneKey}`);
             } else {
-                console.log('MISS INPUT (no life penalty)');
+                console.log(`MISS INPUT lane:${laneKey}`);
             }
         });
 
