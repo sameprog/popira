@@ -194,7 +194,7 @@
 
             const hitIndex = notes.findIndex(note =>
                 note.lane === laneKey &&
-                Math.abs(performance.now() - startTime - note.time) < 300 &&
+                Math.abs(performance.now() - startTime - note.time) < 50 &&
                 !note.hit && !note.missed
             );
 
